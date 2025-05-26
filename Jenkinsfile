@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         AWS_REGION = "ap-south-1"
-        EKS_CLUSTER_NAME = "your-eks-cluster-name" // ✅ Replace with your actual EKS cluster name
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+        EKS_CLUSTER_NAME = "your-eks-cluster-name" // ✅ Replace with your EKS cluster name
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials') // Jenkins credentials ID
         DOCKERHUB_IMAGE = "${DOCKERHUB_CREDENTIALS_USR}/myapp:latest"
     }
 
@@ -17,31 +17,27 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t $DOCKERHUB_IMAGE ."
+                sh 'docker build -t "$DOCKERHUB_IMAGE" .'
             }
         }
 
         stage('Login to Docker Hub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials',
-                                                  usernameVariable: 'DOCKER_USER',
-                                                  passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo "$DOCKER_PASS" | docker login --username "$DOCKER_USER" --password-stdin
-                    '''
-                }
+                sh '''
+                    echo "$DOCKERHUB_CREDENTIALS_PSW" | docker login -u "$DOCKERHUB_CREDENTIALS_USR" --password-stdin
+                '''
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
-                sh "docker push $DOCKERHUB_IMAGE"
+                sh 'docker push "$DOCKERHUB_IMAGE"'
             }
         }
 
         stage('Update Kubeconfig') {
             steps {
-                sh "aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER_NAME"
+                sh 'aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER_NAME"'
             }
         }
 
