@@ -2,18 +2,16 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB_USER = "satya44jit"
-        DOCKERHUB_IMAGE = "${DOCKER_HUB_USER}/myapp:latest"
-        DOCKER_HUB_PASS = credentials('dockerhub-credentials') // Jenkins secret
-
         AWS_REGION = "ap-south-1"
-        EKS_CLUSTER_NAME = "your-eks-cluster-name"
+        EKS_CLUSTER_NAME = "your-eks-cluster-name" // ✅ Replace with your actual EKS cluster name
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
+        DOCKERHUB_IMAGE = "${DOCKERHUB_CREDENTIALS_USR}/myapp:latest"
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout from GitHub') {
             steps {
-                git branch: 'main', url: 'https://github.com/chinabudhi123/EKS-Jenkins-CICD.git'
+                git branch: 'main', url: 'https://github.com/satya44jit/eks-jenkins-cicd.git'
             }
         }
 
@@ -23,12 +21,21 @@ pipeline {
             }
         }
 
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials',
+                                                  usernameVariable: 'DOCKER_USER',
+                                                  passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login --username "$DOCKER_USER" --password-stdin
+                    '''
+                }
+            }
+        }
+
         stage('Push to Docker Hub') {
             steps {
-                sh """
-                    echo $DOCKER_HUB_PASS | docker login --username $DOCKER_HUB_USER --password-stdin
-                    docker push $DOCKERHUB_IMAGE
-                """
+                sh "docker push $DOCKERHUB_IMAGE"
             }
         }
 
@@ -40,20 +47,24 @@ pipeline {
 
         stage('Deploy to EKS') {
             steps {
-                sh """
+                sh '''
+                    echo "Updating image in deployment YAML..."
+                    sed -i "s|image:.*|image: ''' + "${DOCKERHUB_IMAGE}" + '''|" k8s/deployment.yaml
+
+                    echo "Deploying to EKS..."
                     kubectl apply -f k8s/deployment.yaml
                     kubectl apply -f k8s/service.yaml
-                """
+                '''
             }
         }
     }
 
     post {
         success {
-            echo "✅ Successfully deployed to EKS using Docker Hub image."
+            echo '✅ CI/CD pipeline executed successfully and app is deployed to EKS!'
         }
         failure {
-            echo "❌ Deployment failed. Check logs."
+            echo '❌ Pipeline failed. Please check the logs for more information.'
         }
     }
 }
