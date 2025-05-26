@@ -1,0 +1,60 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_HUB_USER = "satya44jit"
+        DOCKERHUB_IMAGE = "${DOCKER_HUB_USER}/myapp:latest"
+        DOCKER_HUB_PASS = credentials('dockerhub-credentials') // Jenkins secret
+
+        AWS_REGION = "ap-south-1"
+        EKS_CLUSTER_NAME = "your-eks-cluster-name"
+    }
+
+    stages {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/satya44jit/eks-jenkins-cicd.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t $DOCKERHUB_IMAGE ."
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                sh """
+                    echo $DOCKER_HUB_PASS | docker login --username $DOCKER_HUB_USER --password-stdin
+                    docker push $DOCKERHUB_IMAGE
+                """
+            }
+        }
+
+        stage('Update Kubeconfig') {
+            steps {
+                sh "aws eks update-kubeconfig --region $AWS_REGION --name $EKS_CLUSTER_NAME"
+            }
+        }
+
+        stage('Deploy to EKS') {
+            steps {
+                sh """
+                    kubectl apply -f k8s/deployment.yaml
+                    kubectl apply -f k8s/service.yaml
+                """
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Successfully deployed to EKS using Docker Hub image."
+        }
+        failure {
+            echo "❌ Deployment failed. Check logs."
+        }
+    }
+}
+
