@@ -11,7 +11,7 @@ pipeline {
     stages {
         stage('Checkout from GitHub') {
             steps {
-                git branch: 'main', url: 'https://github.com/satya44jit/eks-jenkins-cicd.git'
+                git branch: 'main', url: 'https://github.com/chinabudhi123/EKS-Jenkins-CICD.git'
             }
         }
 
