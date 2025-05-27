@@ -48,8 +48,8 @@ pipeline {
                     sed -i "s|image:.*|image: ''' + "${DOCKERHUB_IMAGE}" + '''|" k8s/deployment.yaml
 
                     echo "Deploying to EKS..."
-                    kubectl apply -f k8s/deployment.yaml
-                    kubectl apply -f k8s/service.yaml
+                    kubectl apply -f K8s/deployment.yaml
+                    kubectl apply -f K8s/service.yaml
                 '''
             }
         }
