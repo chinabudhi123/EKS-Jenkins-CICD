@@ -45,7 +45,7 @@ pipeline {
             steps {
                 sh '''
                     echo "Updating image in deployment YAML..."
-                    sed -i "s|image:.*|image: ''' + "${DOCKERHUB_IMAGE}" + '''|" k8s/deployment.yaml
+                    sed -i "s|image:.*|image: ''' + "${DOCKERHUB_IMAGE}" + '''|" K8s/deployment.yaml
 
                     echo "Deploying to EKS..."
                     kubectl apply -f K8s/deployment.yaml
