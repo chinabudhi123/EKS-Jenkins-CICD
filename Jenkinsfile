@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         AWS_REGION = "ap-south-1"
-        EKS_CLUSTER_NAME = "your-eks-cluster-name" // ✅ Replace with your EKS cluster name
+        EKS_CLUSTER_NAME = "EKS_test_cluster" // ✅ Replace with your EKS cluster name
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials') // Jenkins credentials ID
         DOCKERHUB_IMAGE = "${DOCKERHUB_CREDENTIALS_USR}/myapp:latest"
     }
